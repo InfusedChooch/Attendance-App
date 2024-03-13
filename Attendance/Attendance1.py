@@ -291,12 +291,29 @@ class CheckInApp(ctk.CTk):
     def remove_class(self):
         class_to_remove = self.remove_class_selection.get()
         if class_to_remove in self.classes:
+            # Update in-memory list and UI elements
             self.classes.remove(class_to_remove)
             self.class_selection.configure(values=self.classes)
             self.remove_class_dropdown.configure(values=self.classes)  # Update remove class dropdown
             messagebox.showinfo("Success", f"Class '{class_to_remove}' removed.")
+
+            # Load the current JSON data
+            file_path = self.get_data_file_path()
+            with open(file_path, "r") as file:
+                data = json.load(file)
+
+            # Check if the class exists in the JSON data and remove it
+            if class_to_remove in data:
+                del data[class_to_remove]
+
+                # Save the updated data back to the JSON file
+                with open(file_path, "w") as file:
+                    json.dump(data, file, indent=4)
+
+                # Optional: Refresh the app or specific UI components to reflect changes
+                self.refresh_app()
         else:
-            messagebox.showwarning("Warning", "Please select a valid class to remove.")
+         messagebox.showwarning("Warning", "Please select a valid class to remove.")
 
     def export_data(self):
         file_path = self.get_data_file_path()
