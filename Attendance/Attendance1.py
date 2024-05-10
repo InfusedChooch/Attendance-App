@@ -30,7 +30,7 @@ class CheckInApp(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("Check-In System")
-        self.geometry("600x380")
+        self.geometry("500x250")
     
         #load Data from
         self.attendance_data = self.load_attendance_data()
