@@ -61,28 +61,16 @@ class CheckInApp(ctk.CTk):
         self.name_dropdown.pack(pady=5)
         self.name_dropdown.bind('<Return>' , self.check_in)
         
-        # Name Entry
-       # self.name_label = ctk.CTkLabel(self, text="Or Type Your Name:")
-       # self.name_label.pack(pady=(10, 0))
         self.name_entry = ctk.CTkEntry(self, width=400)
-        #self.name_entry.pack(pady=5)
         self.name_entry.bind('<Return>', self.check_in)
 
         # Check-In Button
         self.check_in_button = ctk.CTkButton(self, text="Check In", command=self.check_in)
         self.check_in_button.pack(pady=(10, 0))
-
-        # Management Button
-        self.manage_classes_button = ctk.CTkButton(self, text="Manage Classes & Export", command=self.open_management_window)
-        self.manage_classes_button.pack(pady=(5, 0))
-
-        # Refresh Button
-        self.refresh_button = ctk.CTkButton(self, text="Refresh App", command=self.refresh_app)
-        self.refresh_button.pack(pady=(10, 0))
         
         # Audit Log
-        self.manage_classes_button = ctk.CTkButton(self, text="Audit Log", command=self.audit_log)
-        self.manage_classes_button.pack(pady=(5, 0))
+        self.audit_button = ctk.CTkButton(self, text="Audit Log", command=self.audit_log)
+        self.audit_button.pack(pady=(5, 0))
 
         # Call update_name_dropdown initially to populate names based on the first class
         self.update_name_dropdown()
@@ -349,33 +337,47 @@ class CheckInApp(ctk.CTk):
         audit_window = ctk.CTkToplevel(self)
         audit_window.title("Audit Log - Today's Check-Ins")
         audit_window.geometry("800x800")
+    
+    
+     # Create a frame to hold the buttons
+        button_frame = ctk.CTkFrame(audit_window)
+        button_frame.pack(pady=20)
         
-                #Export Data Button
-        export_button = ctk.CTkButton(audit_window, text="Export Data", command=self.export_data)
-        export_button.pack(pady=(10, 0))
+        # Create buttons inside the frame
+        button1 = ctk.CTkButton(button_frame, text="Export Data", command=self.export_data)
+        button2 = ctk.CTkButton(button_frame, text="Refresh", command=self.refresh_app)
+        button3 = ctk.CTkButton(button_frame, text="Management", command=self.open_management_window)
+        
+        # Pack buttons horizontally
+        button1.pack(side="left", padx=10)
+        button2.pack(side="left", padx=10)
+        button3.pack(side="left", padx=10)
+        
 
+    # ScrolledText widget for displaying the results
         result_area = scrolledtext.ScrolledText(audit_window, width=600, height=80)
         result_area.pack(pady=20)
 
         today = datetime.now().strftime("%Y-%m-%d")
         check_in_entries = []
 
-    # Loop through all courses and students
+    # Collect all today's check-ins
         for course, students in self.attendance_data.items():
             for student, details in students.items():
                 for record in details['Check-in']:
                     if record['Date'] == today:
                         time = record['Time']
-                    # Append the entry within the if block to ensure 'time' is defined
                         check_in_entries.append((today, time, student, course))
 
     # Sort entries by date and time (most recent first)
         check_in_entries.sort(key=lambda entry: (entry[0], entry[1]), reverse=True)
 
-    # Check if there are any check-in entries and display them
-        if check_in_entries:
-            for date, time, student, course in check_in_entries:
-                result_area.insert('end', f"{student} ({course}) - {date} at {time}\n")
+    # Create output text from sorted entries
+        output_text = [f"{entry[2]} ({entry[3]}) - Checked in on {entry[0]} at {entry[1]}\n" for entry in check_in_entries]
+
+    # Insert sorted text into the ScrolledText widget
+        if output_text:
+            result_area.insert('end', ''.join(output_text))
         else:
             result_area.insert('end', "No check-ins for today.")
 
