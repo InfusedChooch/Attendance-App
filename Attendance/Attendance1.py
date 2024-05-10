@@ -1,6 +1,6 @@
 import customtkinter as ctk
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import filedialog, messagebox, scrolledtext
 import json
 import csv
 from datetime import datetime
@@ -31,7 +31,9 @@ class CheckInApp(ctk.CTk):
         super().__init__()
         self.title("Check-In System")
         self.geometry("600x380")
-
+    
+        #load Data from
+        self.attendance_data = self.load_attendance_data()
 
        # Load class / name list from JSON
         self.classes = self.load_classes_from_json()
@@ -51,17 +53,19 @@ class CheckInApp(ctk.CTk):
         self.selected_class.trace_add("write", self.update_name_dropdown)
 
         # Name Dropdown (initially empty)
-        self.name_dropdown_label = ctk.CTkLabel(self, text="Select name:")
+        self.name_dropdown_label = ctk.CTkLabel(self, text="Select or Type name:")
         self.name_dropdown_label.pack(pady=(5, 0))
+    
         self.selected_name = tk.StringVar()
         self.name_dropdown = ctk.CTkComboBox(self, variable=self.selected_name, width=400)
         self.name_dropdown.pack(pady=5)
-
+        self.name_dropdown.bind('<Return>' , self.check_in)
+        
         # Name Entry
-        self.name_label = ctk.CTkLabel(self, text="Or Type Your Name:")
-        self.name_label.pack(pady=(10, 0))
+       # self.name_label = ctk.CTkLabel(self, text="Or Type Your Name:")
+       # self.name_label.pack(pady=(10, 0))
         self.name_entry = ctk.CTkEntry(self, width=400)
-        self.name_entry.pack(pady=5)
+        #self.name_entry.pack(pady=5)
         self.name_entry.bind('<Return>', self.check_in)
 
         # Check-In Button
@@ -75,6 +79,10 @@ class CheckInApp(ctk.CTk):
         # Refresh Button
         self.refresh_button = ctk.CTkButton(self, text="Refresh App", command=self.refresh_app)
         self.refresh_button.pack(pady=(10, 0))
+        
+        # Audit Log
+        self.manage_classes_button = ctk.CTkButton(self, text="Audit Log", command=self.audit_log)
+        self.manage_classes_button.pack(pady=(5, 0))
 
         # Call update_name_dropdown initially to populate names based on the first class
         self.update_name_dropdown()
@@ -82,6 +90,13 @@ class CheckInApp(ctk.CTk):
         # Initially populate the name dropdown based on the first class
         self.update_name_dropdown()
 
+    def load_attendance_data(self):
+        file_path = self.get_data_file_path()
+        if os.path.exists(file_path):
+            with open(file_path, 'r') as file:
+                return json.load(file)
+        else:
+            return {}
 
     def refresh_app(self):
         # Reload class and name lists from JSON
@@ -211,15 +226,7 @@ class CheckInApp(ctk.CTk):
         self.slider_value_label = ctk.CTkLabel(management_window, text="Slider Value: 1")
         self.slider_value_label.pack()
         self.update_slider_value_label()  # Start updating the label with the slider value
-
-        
-        #Export Data Button
-        export_button = ctk.CTkButton(management_window, text="Export Data", command=self.export_data)
-        export_button.pack(pady=(10, 0))
-        
-        
-            # Added conversion functions
-            
+      
     def convert_csv(self, input_file):
         converted_data = []
         appendix_value = int(self.course_appendix_slider.get())  # Fetch the slider value
@@ -338,6 +345,42 @@ class CheckInApp(ctk.CTk):
 
         messagebox.showinfo("Report Generated", "The report has been successfully generated.")
 
+    def audit_log(self):
+        audit_window = ctk.CTkToplevel(self)
+        audit_window.title("Audit Log - Today's Check-Ins")
+        audit_window.geometry("800x800")
+        
+                #Export Data Button
+        export_button = ctk.CTkButton(audit_window, text="Export Data", command=self.export_data)
+        export_button.pack(pady=(10, 0))
+
+        result_area = scrolledtext.ScrolledText(audit_window, width=600, height=80)
+        result_area.pack(pady=20)
+
+        today = datetime.now().strftime("%Y-%m-%d")
+        check_in_entries = []
+
+    # Loop through all courses and students
+        for course, students in self.attendance_data.items():
+            for student, details in students.items():
+                for record in details['Check-in']:
+                    if record['Date'] == today:
+                        time = record['Time']
+                    # Append the entry within the if block to ensure 'time' is defined
+                        check_in_entries.append((today, time, student, course))
+
+    # Sort entries by date and time (most recent first)
+        check_in_entries.sort(key=lambda entry: (entry[0], entry[1]), reverse=True)
+
+    # Check if there are any check-in entries and display them
+        if check_in_entries:
+            for date, time, student, course in check_in_entries:
+                result_area.insert('end', f"{student} ({course}) - {date} at {time}\n")
+        else:
+            result_area.insert('end', "No check-ins for today.")
+
+    
+        
 def main():
     app = CheckInApp()
     app.mainloop()
