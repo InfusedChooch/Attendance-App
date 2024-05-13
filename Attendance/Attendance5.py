@@ -31,6 +31,9 @@ class CheckInApp(ctk.CTk):
         super().__init__()
         self.title("Check-In System")
         self.geometry("500x250")
+
+        # This will hold the ScrolledText widget
+        self.result_area = None
     
         #load Data from
         self.attendance_data = self.load_attendance_data()
@@ -104,6 +107,7 @@ class CheckInApp(ctk.CTk):
         # Optionally, clear any existing selections or input
         self.name_entry.delete(0, tk.END)
         self.selected_name.set("")
+        self.update_audit_log()
 
     def update_slider_value_label(self):
         current_value = self.course_appendix_slider.get()
@@ -176,6 +180,10 @@ class CheckInApp(ctk.CTk):
 
         messagebox.showinfo("Success", f"{full_name} has successfully checked in for {selected_class}.")
         self.name_entry.delete(0, tk.END)
+        
+        #Audit Data
+        self.attendance_data = self.load_attendance_data()
+        self.update_audit_log()  # Update the audit log to reflect new data immediately
     
     def open_management_window(self):
         management_window = ctk.CTkToplevel(self)
@@ -333,55 +341,49 @@ class CheckInApp(ctk.CTk):
 
         messagebox.showinfo("Report Generated", "The report has been successfully generated.")
 
+
     def audit_log(self):
-        audit_window = ctk.CTkToplevel(self)
-        audit_window.title("Audit Log - Today's Check-Ins")
-        audit_window.geometry("800x800")
+        if not hasattr(self, 'audit_window') or not self.audit_window.winfo_exists():
+            self.audit_window = ctk.CTkToplevel(self)
+            self.audit_window.title("Audit Log - Today's Check-Ins")
+            self.audit_window.geometry("800x800")
     
-    
-     # Create a frame to hold the buttons
-        button_frame = ctk.CTkFrame(audit_window)
-        button_frame.pack(pady=20)
-        
-        # Create buttons inside the frame
-        button1 = ctk.CTkButton(button_frame, text="Export Data", command=self.export_data)
-        button2 = ctk.CTkButton(button_frame, text="Refresh", command=self.refresh_app)
-        button3 = ctk.CTkButton(button_frame, text="Management", command=self.open_management_window)
-        
-        # Pack buttons horizontally
-        button1.pack(side="left", padx=10)
-        button2.pack(side="left", padx=10)
-        button3.pack(side="left", padx=10)
-        
+            button_frame = ctk.CTkFrame(self.audit_window)
+            button_frame.pack(pady=20)
 
-    # ScrolledText widget for displaying the results
-        result_area = scrolledtext.ScrolledText(audit_window, width=600, height=80)
-        result_area.pack(pady=20)
+            button1 = ctk.CTkButton(button_frame, text="Export Data", command=self.export_data)
+            button2 = ctk.CTkButton(button_frame, text="Refresh", command=self.refresh_app)
+            button3 = ctk.CTkButton(button_frame, text="Management", command=self.open_management_window)
+            
+            button1.pack(side="left", padx=10)
+            button2.pack(side="left", padx=10)
+            button3.pack(side="left", padx=10)
 
-        today = datetime.now().strftime("%Y-%m-%d")
-        check_in_entries = []
+            self.result_area = scrolledtext.ScrolledText(self.audit_window, width=600, height=80)
+            self.result_area.pack(pady=20)
 
-    # Collect all today's check-ins
-        for course, students in self.attendance_data.items():
-            for student, details in students.items():
-                for record in details['Check-in']:
-                    if record['Date'] == today:
-                        time = record['Time']
-                        check_in_entries.append((today, time, student, course))
+        self.update_audit_log()
 
-    # Sort entries by date and time (most recent first)
-        check_in_entries.sort(key=lambda entry: (entry[0], entry[1]), reverse=True)
+    def update_audit_log(self):
+        if self.result_area:
+            self.result_area.delete('1.0', 'end')
+            today = datetime.now().strftime("%Y-%m-%d")
+            check_in_entries = []
 
-    # Create output text from sorted entries
-        output_text = [f"{entry[2]} ({entry[3]}) - Checked in on {entry[0]} at {entry[1]}\n" for entry in check_in_entries]
+            for course, students in self.attendance_data.items():
+                for student, details in students.items():
+                    for record in details['Check-in']:
+                        if record['Date'] == today:
+                            time = record['Time']
+                            check_in_entries.append((today, time, student, course))
 
-    # Insert sorted text into the ScrolledText widget
-        if output_text:
-            result_area.insert('end', ''.join(output_text))
-        else:
-            result_area.insert('end', "No check-ins for today.")
+            check_in_entries.sort(key=lambda entry: (entry[0], entry[1]), reverse=True)
 
-    
+            output_text = [f"{entry[2]} ({entry[3]}) - Checked in on {entry[0]} at {entry[1]}\n" for entry in check_in_entries]
+            if output_text:
+                self.result_area.insert('end', ''.join(output_text))
+            else:
+                self.result_area.insert('end', "No check-ins for today.")  
         
 def main():
     app = CheckInApp()
