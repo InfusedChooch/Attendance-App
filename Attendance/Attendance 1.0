@@ -16,23 +16,26 @@ class CheckInApp(ctk.CTk):
         self.title("Check-In System")
         self.geometry("500x250")
 
+        # Load attendance data and classes from JSON file
         self.attendance_data = self.load_attendance_data()
         self.classes = self.load_classes_from_json()
-        self.names = ["Select"]
 
         if not self.classes:
             self.classes = ["No Classes Found"]
 
+        # Initialize the UI components
         self.initialize_ui()
-        self.update_name_dropdown()
 
     def initialize_ui(self):
+        """Initialize all the UI components."""
         self.create_class_selection_dropdown()
         self.create_name_entry_dropdown()
         self.create_check_in_button()
         self.create_audit_log_button()
+        self.update_name_dropdown()  # Populate name dropdown based on the first class
 
     def create_class_selection_dropdown(self):
+        """Create and set up the class selection dropdown."""
         self.class_label = ctk.CTkLabel(self, text="Select Class:")
         self.class_label.pack(pady=(5, 0))
 
@@ -43,6 +46,7 @@ class CheckInApp(ctk.CTk):
         self.selected_class.trace_add("write", self.update_name_dropdown)
 
     def create_name_entry_dropdown(self):
+        """Create and set up the name entry dropdown and entry field."""
         self.name_dropdown_label = ctk.CTkLabel(self, text="Select or Type name:")
         self.name_dropdown_label.pack(pady=(5, 0))
 
@@ -55,14 +59,17 @@ class CheckInApp(ctk.CTk):
         self.name_entry.bind('<Return>', self.check_in)
 
     def create_check_in_button(self):
+        """Create the check-in button."""
         self.check_in_button = ctk.CTkButton(self, text="Check In", command=self.check_in)
         self.check_in_button.pack(pady=(10, 0))
 
     def create_audit_log_button(self):
+        """Create the audit log button."""
         self.audit_button = ctk.CTkButton(self, text="Audit Log", command=self.audit_log)
         self.audit_button.pack(pady=(20, 0))
 
     def get_data_file_path(self):
+        """Get the path to the data file. Create it if it doesn't exist."""
         desktop_path = Path.home() / 'Desktop'
         data_directory = desktop_path / 'DataAT2'
         os.makedirs(data_directory, exist_ok=True)
@@ -73,6 +80,7 @@ class CheckInApp(ctk.CTk):
         return file_path
 
     def load_attendance_data(self):
+        """Load attendance data from the JSON file."""
         file_path = self.get_data_file_path()
         if os.path.exists(file_path):
             with open(file_path, 'r') as file:
@@ -80,8 +88,8 @@ class CheckInApp(ctk.CTk):
         return {}
 
     def refresh_app(self):
+        """Refresh the application by reloading class and name lists."""
         self.classes = self.load_classes_from_json()
-        self.names = ["Select"]
 
         self.class_selection.configure(values=self.classes)
         if self.classes:
@@ -94,12 +102,8 @@ class CheckInApp(ctk.CTk):
         self.selected_name.set("")
         self.update_audit_log()
 
-    def update_slider_value_label(self):
-        current_value = self.course_appendix_slider.get()
-        self.slider_value_label.configure(text=f"Slider Value: {current_value}")
-        self.after(100, self.update_slider_value_label)
-
     def update_name_dropdown(self, *args):
+        """Update the names dropdown based on the selected class."""
         selected_class = self.selected_class.get()
         file_path = self.get_data_file_path()
         try:
@@ -120,6 +124,7 @@ class CheckInApp(ctk.CTk):
             messagebox.showwarning("JSON Error", "There was an error reading the JSON file.")
 
     def load_classes_from_json(self):
+        """Load classes from the JSON file."""
         file_path = self.get_data_file_path()
         classes = []
         try:
@@ -133,7 +138,8 @@ class CheckInApp(ctk.CTk):
         return classes
 
     def check_in(self, event=None):
-        selected_name_dropdown = self.selected_name.get().strip().title() if self.names else ""
+        """Handle the check-in process for a student."""
+        selected_name_dropdown = self.selected_name.get().strip().title()
         entered_name = self.name_entry.get().strip().title()
 
         full_name = selected_name_dropdown if selected_name_dropdown else entered_name
@@ -169,6 +175,7 @@ class CheckInApp(ctk.CTk):
         self.update_audit_log()
 
     def open_management_window(self):
+        """Open the class management window."""
         management_window = ctk.CTkToplevel(self)
         management_window.title("Class Management & Export")
         management_window.geometry("400x400")
@@ -176,6 +183,7 @@ class CheckInApp(ctk.CTk):
         self.create_management_widgets(management_window)
 
     def create_management_widgets(self, window):
+        """Create widgets for class management in the management window."""
         # Add Class Widgets
         add_class_label = ctk.CTkLabel(window, text="Add New Class:")
         add_class_label.pack(pady=(10, 0))
@@ -205,9 +213,16 @@ class CheckInApp(ctk.CTk):
         self.course_appendix_slider.pack(pady=(0, 10))
         self.slider_value_label = ctk.CTkLabel(window, text="Slider Value: 1")
         self.slider_value_label.pack()
-        self.update_slider_value_label()  # Start updating the label with the slider value
+        self.update_slider_value_label()
+
+    def update_slider_value_label(self):
+        """Update the label with the current value of the slider."""
+        current_value = self.course_appendix_slider.get()
+        self.slider_value_label.configure(text=f"Slider Value: {current_value}")
+        self.after(100, self.update_slider_value_label)
 
     def convert_csv(self, input_file):
+        """Convert a CSV file to a dictionary."""
         converted_data = []
         appendix_value = int(self.course_appendix_slider.get())
         with open(input_file, 'r') as file:
@@ -221,6 +236,7 @@ class CheckInApp(ctk.CTk):
         return converted_data
 
     def save_csv(self, data):
+        """Save data to a CSV file."""
         desktop_path = os.path.join(os.path.expanduser('~'), 'Desktop')
         folder_path = os.path.join(desktop_path, 'DataAT2')
         os.makedirs(folder_path, exist_ok=True)
@@ -234,6 +250,7 @@ class CheckInApp(ctk.CTk):
         return file_path
 
     def convert_to_json(self, data):
+        """Convert a list of dictionaries to a nested JSON structure."""
         json_data = {}
         for record in data:
             course = record['Course']
@@ -245,6 +262,7 @@ class CheckInApp(ctk.CTk):
         return json_data
 
     def save_json(self, data):
+        """Save data to a JSON file."""
         desktop_path = os.path.join(os.path.expanduser('~'), 'Desktop')
         folder_path = os.path.join(desktop_path, 'DataAT2')
         os.makedirs(folder_path, exist_ok=True)
@@ -255,6 +273,7 @@ class CheckInApp(ctk.CTk):
         return file_path
 
     def select_file(self):
+        """Select a CSV file for conversion to JSON."""
         file_path = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
         if file_path:
             converted_data = self.convert_csv(file_path)
@@ -264,6 +283,7 @@ class CheckInApp(ctk.CTk):
             messagebox.showinfo("Conversion Successful", f"CSV file converted and saved to:\n{saved_file_path_csv}\n\nJSON file saved to:\n{saved_file_path_json}")
 
     def add_custom_class(self):
+        """Add a new class to the list of classes."""
         new_class = self.add_class_entry.get().strip()
         if new_class and new_class not in self.classes:
             self.classes.append(new_class)
@@ -275,6 +295,7 @@ class CheckInApp(ctk.CTk):
             messagebox.showwarning("Warning", "Class already exists or field is empty.")
 
     def remove_class(self):
+        """Remove a class from the list of classes."""
         class_to_remove = self.remove_class_selection.get()
         if class_to_remove in self.classes:
             self.classes.remove(class_to_remove)
@@ -297,10 +318,12 @@ class CheckInApp(ctk.CTk):
             messagebox.showwarning("Warning", "Please select a valid class to remove.")
 
     def export_data(self):
+        """Export attendance data to a text file."""
         file_path = self.get_data_file_path()
         self.generate_report(file_path, file_path.with_suffix('.txt'))
 
     def generate_report(self, file_path, output_file):
+        """Generate a report of attendance data."""
         if not os.path.exists(file_path):
             messagebox.showerror("Error", "File does not exist.")
             return
@@ -319,6 +342,7 @@ class CheckInApp(ctk.CTk):
         messagebox.showinfo("Report Generated", "The report has been successfully generated.")
 
     def audit_log(self):
+        """Open the audit log window to display today's check-ins."""
         if not hasattr(self, 'audit_window') or not self.audit_window.winfo_exists():
             self.audit_window = ctk.CTkToplevel(self)
             self.audit_window.title("Audit Log - Today's Check-Ins")
@@ -354,6 +378,7 @@ class CheckInApp(ctk.CTk):
         self.update_audit_log()
 
     def update_audit_log(self, sort_key="date_time_desc"):
+        """Update the audit log display based on the selected sort key."""
         if self.result_area:
             self.result_area.delete('1.0', 'end')
             today = datetime.now().strftime("%Y-%m-%d")
