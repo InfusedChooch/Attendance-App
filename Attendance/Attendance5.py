@@ -34,6 +34,7 @@ class CheckInApp(ctk.CTk):
 
         # This will hold the ScrolledText widget
         self.result_area = None
+
     
         #load Data from
         self.attendance_data = self.load_attendance_data()
@@ -73,7 +74,7 @@ class CheckInApp(ctk.CTk):
         
         # Audit Log
         self.audit_button = ctk.CTkButton(self, text="Audit Log", command=self.audit_log)
-        self.audit_button.pack(pady=(5, 0))
+        self.audit_button.pack(pady=(20, 0))
 
         # Call update_name_dropdown initially to populate names based on the first class
         self.update_name_dropdown()
@@ -347,7 +348,7 @@ class CheckInApp(ctk.CTk):
             self.audit_window = ctk.CTkToplevel(self)
             self.audit_window.title("Audit Log - Today's Check-Ins")
             self.audit_window.geometry("800x800")
-    
+
             button_frame = ctk.CTkFrame(self.audit_window)
             button_frame.pack(pady=20)
 
@@ -359,12 +360,25 @@ class CheckInApp(ctk.CTk):
             button2.pack(side="left", padx=10)
             button3.pack(side="left", padx=10)
 
+            sort_frame = ctk.CTkFrame(self.audit_window)
+            sort_frame.pack(pady=10)
+
+            sort_date_time_desc = ctk.CTkButton(sort_frame, text="Sort by Date & Time (Desc)", command=lambda: self.update_audit_log(sort_key="date_time_desc"))
+            sort_date_time_asc = ctk.CTkButton(sort_frame, text="Sort by Date & Time (Asc)", command=lambda: self.update_audit_log(sort_key="date_time_asc"))
+            sort_student_name = ctk.CTkButton(sort_frame, text="Sort by Student Name", command=lambda: self.update_audit_log(sort_key="student_name"))
+            sort_course = ctk.CTkButton(sort_frame, text="Sort by Course", command=lambda: self.update_audit_log(sort_key="course"))
+            
+            sort_date_time_desc.pack(side="left", padx=10)
+            sort_date_time_asc.pack(side="left", padx=10)
+            sort_student_name.pack(side="left", padx=10)
+            sort_course.pack(side="left", padx=10)
+
             self.result_area = scrolledtext.ScrolledText(self.audit_window, width=600, height=80)
             self.result_area.pack(pady=20)
 
         self.update_audit_log()
 
-    def update_audit_log(self):
+    def update_audit_log(self, sort_key="date_time_desc"):
         if self.result_area:
             self.result_area.delete('1.0', 'end')
             today = datetime.now().strftime("%Y-%m-%d")
@@ -377,13 +391,20 @@ class CheckInApp(ctk.CTk):
                             time = record['Time']
                             check_in_entries.append((today, time, student, course))
 
-            check_in_entries.sort(key=lambda entry: (entry[0], entry[1]), reverse=True)
+            if sort_key == "date_time_desc":
+                check_in_entries.sort(key=lambda entry: (entry[0], entry[1]), reverse=True)
+            elif sort_key == "date_time_asc":
+                check_in_entries.sort(key=lambda entry: (entry[0], entry[1]))
+            elif sort_key == "student_name":
+                check_in_entries.sort(key=lambda entry: entry[2])
+            elif sort_key == "course":
+                check_in_entries.sort(key=lambda entry: entry[3])
 
             output_text = [f"{entry[2]} ({entry[3]}) - Checked in on {entry[0]} at {entry[1]}\n" for entry in check_in_entries]
             if output_text:
                 self.result_area.insert('end', ''.join(output_text))
             else:
-                self.result_area.insert('end', "No check-ins for today.")  
+                self.result_area.insert('end', "No check-ins for today.") 
         
 def main():
     app = CheckInApp()
